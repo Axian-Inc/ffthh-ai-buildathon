@@ -1,0 +1,70 @@
+{
+  "name": "Python + Terraform + AWS + Codex",
+
+  // Base image: Python, git, zsh, common build tools, non-root `vscode` user
+  // https://mcr.microsoft.com/devcontainers/python
+  "image": "mcr.microsoft.com/devcontainers/python:3.12",
+
+  // Add tools via Dev Container Features
+  "features": {
+    // Terraform CLI
+    "ghcr.io/devcontainers/features/terraform:1": {},
+
+    // AWS CLI v2
+    "ghcr.io/devcontainers/features/aws-cli:1": {},
+
+    // Git (image already includes git, but this keeps it explicit/up-to-date)
+    "ghcr.io/devcontainers/features/git:1": {},
+
+    // Node.js for Codex CLI (installed via npm)
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "lts"
+    }
+  },
+
+  // Commands to run after the container is created
+  "postCreateCommand": "npm install -g @openai/codex",
+
+  // Environment inside the container
+  "remoteEnv": {
+    // Default AWS profile + region (tweak as needed)
+    "AWS_PROFILE": "default",
+    "AWS_REGION": "us-west-2",
+  },
+
+  // VS Code-specific customizations
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // Python
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+
+        // Terraform
+        "hashicorp.terraform",
+
+        // AWS
+        "AmazonWebServices.aws-toolkit-vscode",
+
+        // Git quality-of-life
+        "eamodio.gitlens",
+
+        // Docker (often handy with devcontainers & infra)
+        "ms-azuretools.vscode-docker"
+      ],
+      "settings": {
+        // Python settings
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.analysis.typeCheckingMode": "basic",
+        "python.testing.pytestEnabled": true,
+        "python.testing.unittestEnabled": false,
+
+        // Terraform
+        "terraform.languageServer.enabled": true
+      }
+    }
+  },
+
+  // Use the non-root user the base image defines
+  "remoteUser": "vscode"
+}
