@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv/
+venv/
+.envrc
+.python-version
+build/
+dist/
+.eggs/
+*.egg-info/
+.mypy_cache/
+.pytest_cache/
+.coverage*
+htmlcov/
+
+# Terraform
+.terraform/
+.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+terraform.tfvars
+terraform.tfvars.json
+override.tf
+override.tf.json
+*.auto.tfvars
+*.auto.tfvars.json
+
+# Node / tooling
+node_modules/
+.npm/
+
+# Local auth secret
+auth.json
