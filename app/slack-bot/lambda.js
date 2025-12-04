@@ -22,6 +22,9 @@ const app = new App({
 app.event('message', async ({ event, say, logger }) => {
   const { text = '', bot_id, subtype, user } = event;
 
+  // Debug logging to help trace channel and token in CloudWatch.
+  logger.info(`Incoming message event on channel ${event.channel || 'unknown'} using token ${botToken || 'unset'}`);
+
   // Skip if this is from any bot or lacks a user (system events).
   if (bot_id || subtype === 'bot_message' || !user) {
     logger.debug ? logger.debug('Ignoring bot/system message', { bot_id, subtype }) : logger.info('Ignoring bot/system message');
