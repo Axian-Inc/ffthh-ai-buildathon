@@ -1,0 +1,16 @@
+{
+  "name": "slack-hello-world-bot",
+  "version": "1.0.0",
+  "description": "Slack Bolt hello world bot for AWS Lambda.",
+  "main": "lambda.js",
+  "scripts": {
+    "lint": "echo \"No linters configured\"",
+    "start": "node lambda.js"
+  },
+  "dependencies": {
+    "@slack/bolt": "^3.17.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
