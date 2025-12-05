@@ -80,10 +80,29 @@ data "aws_iam_policy_document" "lambda_logging" {
   }
 }
 
+data "aws_iam_policy_document" "lambda_bedrock" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "bedrock:InvokeModel",
+      "bedrock:InvokeModelWithResponseStream",
+    ]
+
+    resources = ["*"]
+  }
+}
+
 resource "aws_iam_role_policy" "lambda_logging" {
   name   = "${local.base_name}-lambda-logging"
   role   = aws_iam_role.lambda.id
   policy = data.aws_iam_policy_document.lambda_logging.json
+}
+
+resource "aws_iam_role_policy" "lambda_bedrock" {
+  name   = "${local.base_name}-lambda-bedrock"
+  role   = aws_iam_role.lambda.id
+  policy = data.aws_iam_policy_document.lambda_bedrock.json
 }
 
 resource "aws_cloudwatch_log_group" "lambda" {
@@ -98,6 +117,13 @@ resource "aws_lambda_function" "echo" {
   runtime       = "python3.11"
   role          = aws_iam_role.lambda.arn
   timeout       = 10
+
+  environment {
+    variables = {
+      MODEL_ID   = var.bedrock_model_id
+      MAX_TOKENS = var.bedrock_max_tokens
+    }
+  }
 
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
 }
