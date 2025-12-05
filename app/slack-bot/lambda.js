@@ -1,6 +1,8 @@
-// Slack bot that calls AWS Bedrock to generate a friendly response.
+// Slack bot that calls AWS Bedrock to generate responses based on file-driven prompts.
 const { App, AwsLambdaReceiver } = require('@slack/bolt');
 const { BedrockRuntimeClient, InvokeModelCommand } = require('@aws-sdk/client-bedrock-runtime');
+const fs = require('fs');
+const path = require('path');
 
 const signingSecret = process.env.SLACK_SIGNING_SECRET;
 const botToken = process.env.SLACK_BOT_TOKEN;
@@ -16,6 +18,8 @@ const awsLambdaReceiver = new AwsLambdaReceiver({
 });
 
 const bedrock = new BedrockRuntimeClient({ region: awsRegion });
+const promptFiles = ['prompt1.txt', 'prompt2.txt'];
+const promptCache = new Map();
 
 const decodeBody = (body) => {
   if (!body) return {};
@@ -27,17 +31,42 @@ const decodeBody = (body) => {
   }
 };
 
-const buildPrompt = (text) =>
-  `You are a french speaker. Repeat back the given Slack message translated in french. Text: "${text}"`;
+const loadPromptFromFile = async (filename, logger) => {
+  if (promptCache.has(filename)) return promptCache.get(filename);
 
-const getBedrockReply = async (text, logger) => {
+  const filePath = path.join(__dirname, filename);
+
+  try {
+    const content = await fs.promises.readFile(filePath, 'utf8');
+    promptCache.set(filename, content);
+    return content;
+  } catch (error) {
+    const log = logger?.error || console.error;
+    log(`Failed to read prompt file ${filename}`, error);
+    return '';
+  }
+};
+
+const buildPrompt = (template, messageText) => {
+  const text = messageText || 'a new Slack message';
+
+  // Honor placeholder if present; otherwise tack the message onto the template.
+  if (template && template.includes('{{text}}')) {
+    return template.replace(/{{text}}/g, text);
+  }
+
+  const base = template?.trim() || 'You are a french speaker. Repeat back the given Slack message translated in french.';
+  return `${base}\n\nMessage: "${text}"`;
+};
+
+const invokeBedrock = async (prompt, logger) => {
   try {
     const input = {
       modelId,
       contentType: 'application/json',
       accept: 'application/json',
       body: JSON.stringify({
-        inputText: buildPrompt(text || 'a new Slack message'),
+        inputText: prompt,
       }),
     };
 
@@ -49,6 +78,19 @@ const getBedrockReply = async (text, logger) => {
     logger.error('Bedrock invocation failed', error);
     return 'Hello from Bedrock!';
   }
+};
+
+const getBedrockReplies = async (text, logger) => {
+  const replies = [];
+
+  for (const filename of promptFiles) {
+    const template = await loadPromptFromFile(filename, logger);
+    const prompt = buildPrompt(template, text);
+    const reply = await invokeBedrock(prompt, logger);
+    replies.push(reply);
+  }
+
+  return replies;
 };
 
 const app = new App({
@@ -71,9 +113,13 @@ app.event('message', async ({ event, say, logger }) => {
   }
 
   try {
-    const reply = await getBedrockReply(text, logger);
-    await say(reply);
-    logger.info(`Replied to message in channel ${event.channel} using Bedrock model ${modelId}`);
+    const replies = await getBedrockReplies(text, logger);
+    const formatted = replies
+      .map((reply, index) => `Response ${index + 1}: ${reply}`)
+      .join('\n\n');
+
+    await say(formatted);
+    logger.info(`Replied to message in channel ${event.channel} using Bedrock model ${modelId} with ${replies.length} prompts`);
   } catch (error) {
     logger.error('Failed to send response', error);
   }

@@ -1,0 +1,1 @@
+Provide a brief French summary (30 words or fewer) of the Slack message, then add one short, encouraging follow-up sentence in French. Slack message: {{text}}
