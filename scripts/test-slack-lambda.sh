@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # Fill these before running
-FUNCTION_URL="${FUNCTION_URL:-https://ncz4himmxnialjoc52xa3dmcye0eicki.lambda-url.us-west-2.on.aws/}"
-SIGNING_SECRET="${SIGNING_SECRET:-b0689465984ff84ec46ea2cb21d59b3c}"
+FUNCTION_URL="${FUNCTION_URL:-your-function-url/}"
+SIGNING_SECRET="${SIGNING_SECRET:-replace-with-slack-signing-secret}"
 
 if [[ "${FUNCTION_URL}" == *"your-function-url"* || "${SIGNING_SECRET}" == "replace-with-slack-signing-secret" ]]; then
   echo "Please set FUNCTION_URL and SIGNING_SECRET before running."
