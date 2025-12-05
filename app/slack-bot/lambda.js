@@ -28,7 +28,7 @@ const decodeBody = (body) => {
 };
 
 const buildPrompt = (text) =>
-  `You are a concise Slack helper. Respond with a short "hello world" style message acknowledging this Slack text: "${text}". Keep it under 15 words.`;
+  `You are a french speaker. Repeat back the given Slack message translated in french. Text: "${text}"`;
 
 const getBedrockReply = async (text, logger) => {
   try {

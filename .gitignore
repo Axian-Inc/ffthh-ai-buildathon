@@ -30,6 +30,7 @@ override.tf
 override.tf.json
 *.auto.tfvars
 *.auto.tfvars.json
+terraform/locals.auto.tfvars
 
 # Node / tooling
 node_modules/

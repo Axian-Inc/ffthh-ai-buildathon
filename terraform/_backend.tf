@@ -1,9 +1,9 @@
 terraform {
   backend "s3" {
     bucket         = "ffthh-ai-build-tf-state"
-    key            = "envs/gjh/terraform.tfstate"
+    key            = "envs/tkh/terraform.tfstate"
     region         = "us-west-2"
-    dynamodb_table = "ffthh-ai-buildathon-tf-lock"
+    use_lockfile   = true
     encrypt        = true
   }
 }

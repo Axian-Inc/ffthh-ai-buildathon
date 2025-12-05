@@ -1,8 +1,8 @@
-# Slack “Hello World” Lambda Bot – Requirements for Codex
+# Slack “Bedrock Echo” Lambda Bot – Requirements for Codex
 
 ## Overview
 
-Create a simple Slack bot using **Slack Bolt for JavaScript** running on **AWS Lambda**. The bot calls **AWS Bedrock** to craft a short “hello world” style response to each user message in channels it’s a member of.
+Create a simple Slack bot using **Slack Bolt for JavaScript** running on **AWS Lambda**. The bot calls **AWS Bedrock** to translate each user message into concise **French** and responds in the same channel.
 
 The project consists of:
 
@@ -15,14 +15,12 @@ The project consists of:
 
 ### 1. Basic Behavior
 
-- The bot should behave as a “hello world” Slack bot powered by Bedrock.
+- The bot should behave as a “Bedrock echo” Slack bot powered by Bedrock.
 - When a user posts a message in a channel where the bot is present:
-  - If the message **did not** come from the bot itself, the bot should post a response message:
-    - Response format:  
-      **`I saw that! <original message text>`**
+  - If the message **did not** come from the bot itself, the bot should reply with a French translation of that message.
     - Example:  
       - User message: `Hello world!`  
-      - Bot message: `I saw that! Hello world!`
+      - Bot message: `Bonjour le monde !`
   - If the message **did come from the bot** (i.e., a self-generated message), **do not respond** (avoid infinite loops).
 
 ### 2. Message Source Filtering
@@ -69,14 +67,13 @@ Pseudocode-level behavior:
 4. If the message is from this bot:
    - Do **nothing** (end handler).
 5. Otherwise:
-   - Post a message back to the same channel:
-     - Text: `I saw that! <original message text>`
+   - Post a message back to the same channel using Bedrock-generated French translation of the original text.
 
 ### 4. Error Handling & Logging
 
 - Log basic diagnostic information (e.g., when events are received, when replies are sent).
 - If posting the response fails, log the error (stack trace / message).
-- No advanced retry logic is required for this “hello world” scenario.
+- No advanced retry logic is required for this echo scenario.
 
 ---
 
@@ -121,7 +118,7 @@ Pseudocode-level behavior:
   - Persistence (databases, S3, etc.).
   - Complex routing or multiple commands.
   - Advanced logging/monitoring beyond basic CloudWatch logs.
-- This is strictly a **“hello world” echo-style bot** that demonstrates:
+- This is strictly a **French echo-style bot** that demonstrates:
   - Receiving messages from Slack via Lambda.
   - Responding to those messages.
   - Ignoring its own messages.
@@ -132,7 +129,7 @@ Pseudocode-level behavior:
 
 1. **Node.js Slack Bolt application** in `/app/slack-bot`:
    - Exposes a handler suitable for AWS Lambda.
-   - Responds via AWS Bedrock with a short “hello world” style acknowledgement of the user message.
+   - Responds via AWS Bedrock with a short French translation of the user message.
    - Ignores messages from itself.
 
 2. **Terraform configuration** under `/terraform`:
@@ -149,4 +146,4 @@ Pseudocode-level behavior:
    - Slack app is configured to send events to the Lambda’s public endpoint.
    - Required environment variables are set.
    
-   …the bot will work as a functioning “hello world” Slack bot in a channel.
+   …the bot will work as a functioning Bedrock echo bot in a channel.
