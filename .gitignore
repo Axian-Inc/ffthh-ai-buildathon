@@ -37,3 +37,4 @@ node_modules/
 
 # Local auth secret
 auth.json
+terraform/plan.tfplan

@@ -8,6 +8,7 @@
     "start": "node lambda.js"
   },
   "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.569.0",
     "@slack/bolt": "^3.17.1"
   },
   "engines": {

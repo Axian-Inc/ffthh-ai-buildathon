@@ -15,3 +15,9 @@ variable "slack_signing_secret" {
   type        = string
   sensitive   = true
 }
+
+variable "bedrock_model_id" {
+  description = "Bedrock model ID to invoke for Slack responses (for example, amazon.titan-text-lite-v1)."
+  type        = string
+  default     = "amazon.titan-text-lite-v1"
+}

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Create a simple Slack bot using **Slack Bolt for JavaScript** running on **AWS Lambda**. The bot will listen to messages in channels it’s a member of and respond by echoing what it “saw.”
+Create a simple Slack bot using **Slack Bolt for JavaScript** running on **AWS Lambda**. The bot calls **AWS Bedrock** to craft a short “hello world” style response to each user message in channels it’s a member of.
 
 The project consists of:
 
@@ -15,7 +15,7 @@ The project consists of:
 
 ### 1. Basic Behavior
 
-- The bot should behave as a “hello world” Slack bot.
+- The bot should behave as a “hello world” Slack bot powered by Bedrock.
 - When a user posts a message in a channel where the bot is present:
   - If the message **did not** come from the bot itself, the bot should post a response message:
     - Response format:  
@@ -91,6 +91,9 @@ Pseudocode-level behavior:
 - Environment variables for the Lambda (at a minimum):
   - `SLACK_BOT_TOKEN`
   - `SLACK_SIGNING_SECRET`
+- Bedrock:
+  - `BEDROCK_MODEL_ID` (defaults to `amazon.titan-text-lite-v1`; override to match an accessible model in your account)
+  - Lambda assumes the AWS account/region has Bedrock access enabled for the selected model.
 - Node.js runtime: use a current AWS-supported runtime (e.g., `nodejs18.x`).
 
 ### 2. Terraform Layout
@@ -106,6 +109,7 @@ Pseudocode-level behavior:
     - Environment variables.)
   - The HTTP integration for Slack (e.g., API Gateway, Lambda URL, or equivalent).
   - Any necessary permissions to allow the HTTP integration to invoke the Lambda.
+  - IAM permissions for the Lambda to call Bedrock (`bedrock:InvokeModel`).
 
 > Note: The Terraform definitions must be complete enough that, after applying, we have a working Lambda endpoint that Slack can call.
 
@@ -128,13 +132,17 @@ Pseudocode-level behavior:
 
 1. **Node.js Slack Bolt application** in `/app/slack-bot`:
    - Exposes a handler suitable for AWS Lambda.
-   - Responds with `I saw that! <original message text>` to user messages.
+   - Responds via AWS Bedrock with a short “hello world” style acknowledgement of the user message.
    - Ignores messages from itself.
 
 2. **Terraform configuration** under `/terraform`:
    - Defines the Lambda function and its execution role.
    - Defines the HTTP integration (API Gateway or Lambda URL) for Slack events.
-   - Sets required environment variables for Slack Bolt.
+   - Sets required environment variables for Slack Bolt and Bedrock (including `BEDROCK_MODEL_ID`).
+
+3. **Bedrock prerequisites**
+   - Ensure Bedrock access is enabled in the target AWS account/region.
+   - The model specified by `BEDROCK_MODEL_ID` must be available to invoke (default is `amazon.titan-text-lite-v1`).
 
 3. **All code structured** so that, once:
    - Terraform is applied.

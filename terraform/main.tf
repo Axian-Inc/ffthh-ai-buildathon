@@ -50,6 +50,17 @@ data "aws_iam_policy_document" "lambda_logs" {
   }
 }
 
+data "aws_iam_policy_document" "bedrock_invoke" {
+  statement {
+    actions = [
+      "bedrock:InvokeModel",
+      "bedrock:InvokeModelWithResponseStream"
+    ]
+
+    resources = ["*"]
+  }
+}
+
 resource "aws_iam_role" "lambda" {
   name               = "${local.function_name}-role"
   assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
@@ -59,6 +70,12 @@ resource "aws_iam_role_policy" "logs" {
   name   = "${local.function_name}-logs"
   role   = aws_iam_role.lambda.id
   policy = data.aws_iam_policy_document.lambda_logs.json
+}
+
+resource "aws_iam_role_policy" "bedrock" {
+  name   = "${local.function_name}-bedrock"
+  role   = aws_iam_role.lambda.id
+  policy = data.aws_iam_policy_document.bedrock_invoke.json
 }
 
 resource "aws_lambda_function" "slack_bot" {
@@ -74,8 +91,9 @@ resource "aws_lambda_function" "slack_bot" {
 
   environment {
     variables = {
-      SLACK_BOT_TOKEN       = var.slack_bot_token
-      SLACK_SIGNING_SECRET  = var.slack_signing_secret
+      SLACK_BOT_TOKEN                     = var.slack_bot_token
+      SLACK_SIGNING_SECRET                = var.slack_signing_secret
+      BEDROCK_MODEL_ID                    = var.bedrock_model_id
       AWS_NODEJS_CONNECTION_REUSE_ENABLED = "1"
     }
   }
@@ -88,10 +106,10 @@ resource "aws_lambda_function_url" "slack_bot" {
 }
 
 resource "aws_lambda_permission" "allow_public_invoke" {
-  statement_id        = "AllowFunctionUrlInvoke"
-  action              = "lambda:InvokeFunctionUrl"
-  function_name       = aws_lambda_function.slack_bot.function_name
-  principal           = "*"
+  statement_id           = "AllowFunctionUrlInvoke"
+  action                 = "lambda:InvokeFunctionUrl"
+  function_name          = aws_lambda_function.slack_bot.function_name
+  principal              = "*"
   function_url_auth_type = aws_lambda_function_url.slack_bot.authorization_type
 }
 

@@ -1,8 +1,11 @@
-// Slack "Hello World" bot for AWS Lambda using Slack Bolt HTTP receiver.
+// Slack bot that calls AWS Bedrock to generate a friendly response.
 const { App, AwsLambdaReceiver } = require('@slack/bolt');
+const { BedrockRuntimeClient, InvokeModelCommand } = require('@aws-sdk/client-bedrock-runtime');
 
 const signingSecret = process.env.SLACK_SIGNING_SECRET;
 const botToken = process.env.SLACK_BOT_TOKEN;
+const modelId = process.env.BEDROCK_MODEL_ID || 'amazon.titan-text-lite-v1';
+const awsRegion = process.env.AWS_REGION || 'us-west-2';
 
 if (!signingSecret || !botToken) {
   console.warn('Missing Slack credentials: SLACK_SIGNING_SECRET and SLACK_BOT_TOKEN are required.');
@@ -11,6 +14,42 @@ if (!signingSecret || !botToken) {
 const awsLambdaReceiver = new AwsLambdaReceiver({
   signingSecret,
 });
+
+const bedrock = new BedrockRuntimeClient({ region: awsRegion });
+
+const decodeBody = (body) => {
+  if (!body) return {};
+  try {
+    return JSON.parse(Buffer.from(body).toString());
+  } catch (error) {
+    console.error('Failed to decode Bedrock response', error);
+    return {};
+  }
+};
+
+const buildPrompt = (text) =>
+  `You are a concise Slack helper. Respond with a short "hello world" style message acknowledging this Slack text: "${text}". Keep it under 15 words.`;
+
+const getBedrockReply = async (text, logger) => {
+  try {
+    const input = {
+      modelId,
+      contentType: 'application/json',
+      accept: 'application/json',
+      body: JSON.stringify({
+        inputText: buildPrompt(text || 'a new Slack message'),
+      }),
+    };
+
+    const response = await bedrock.send(new InvokeModelCommand(input));
+    const payload = decodeBody(response.body);
+    const message = payload.results?.[0]?.outputText?.trim();
+    return message || 'Hello from Bedrock!';
+  } catch (error) {
+    logger.error('Bedrock invocation failed', error);
+    return 'Hello from Bedrock!';
+  }
+};
 
 const app = new App({
   token: botToken,
@@ -32,8 +71,9 @@ app.event('message', async ({ event, say, logger }) => {
   }
 
   try {
-    await say(`I saw that! ${text}`);
-    logger.info(`Replied to message in channel ${event.channel}`);
+    const reply = await getBedrockReply(text, logger);
+    await say(reply);
+    logger.info(`Replied to message in channel ${event.channel} using Bedrock model ${modelId}`);
   } catch (error) {
     logger.error('Failed to send response', error);
   }
