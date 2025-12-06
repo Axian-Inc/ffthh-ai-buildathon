@@ -2,10 +2,13 @@ import base64
 import json
 import logging
 import os
+import urllib.error
+import urllib.request
 from typing import Any, Dict
 
-import boto3
-from botocore.exceptions import BotoCoreError, ClientError
+from botocore.auth import SigV4Auth
+from botocore.awsrequest import AWSRequest
+from botocore.session import Session
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -53,7 +56,7 @@ def extract_message_text(payload: Dict[str, Any]) -> str:
 
 
 def call_bedrock(prompt: str) -> str:
-    client = boto3.client("bedrock-runtime")
+    region = os.environ.get("AWS_REGION", "us-west-2")
     body = {
         "max_tokens": MAX_TOKENS,
         "anthropic_version": "bedrock-2023-05-31",
@@ -67,17 +70,26 @@ def call_bedrock(prompt: str) -> str:
         ],
     }
     try:
-        response = client.invoke_model(
-            modelId=MODEL_ID,
-            contentType="application/json",
-            accept="application/json",
-            body=json.dumps(body),
+        body_json = json.dumps(body)
+        endpoint = f"https://bedrock-runtime.{region}.amazonaws.com/model/{MODEL_ID}/invoke"
+        aws_request = AWSRequest(method="POST", url=endpoint, data=body_json.encode("utf-8"))
+        credentials = Session().get_credentials()
+        SigV4Auth(credentials.get_frozen_credentials(), "bedrock", region).add_auth(aws_request)
+
+        http_request = urllib.request.Request(
+            endpoint,
+            data=body_json.encode("utf-8"),
+            method="POST",
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                **dict(aws_request.headers.items()),
+            },
         )
-        raw_body = response.get("body")
-        if hasattr(raw_body, "read"):
-            raw_body = raw_body.read()
-        if isinstance(raw_body, bytes):
-            raw_body = raw_body.decode("utf-8")
+
+        with urllib.request.urlopen(http_request, timeout=10) as resp:
+            raw_body = resp.read().decode("utf-8")
+
         response_body = json.loads(raw_body or "{}")
         content = response_body.get("content") or []
         if content and isinstance(content, list):
@@ -87,7 +99,7 @@ def call_bedrock(prompt: str) -> str:
                 if isinstance(text, str):
                     return text
         return json.dumps(response_body)
-    except (BotoCoreError, ClientError) as exc:
+    except (ValueError, urllib.error.URLError) as exc:
         logger.exception("Bedrock invocation failed")
         raise RuntimeError(f"Bedrock invoke failed: {exc}") from exc
 
